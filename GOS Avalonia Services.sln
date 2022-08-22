@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32811.315
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSBaseInsection", "GOSBaseInsection\GOSBaseInsection.csproj", "{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSDialogServices", "GOSDialogServices\GOSDialogServices.csproj", "{B9D67C32-CE43-4DD2-B1E4-7089F6575037}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Debug|x64.ActiveCfg = Debug|x64
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Debug|x64.Build.0 = Debug|x64
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Release|x64.ActiveCfg = Release|x64
+		{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}.Release|x64.Build.0 = Release|x64
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Debug|x64.ActiveCfg = Debug|x64
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Debug|x64.Build.0 = Debug|x64
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Release|x64.ActiveCfg = Release|x64
+		{B9D67C32-CE43-4DD2-B1E4-7089F6575037}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D305BE5-2DE5-4832-A7D5-51DA14A70426}
+	EndGlobalSection
+EndGlobal

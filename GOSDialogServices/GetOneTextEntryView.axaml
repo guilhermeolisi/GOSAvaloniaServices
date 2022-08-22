@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:local="GOSAvaloniaServices"
+			 x:Class="GOSAvaloniaServices.GetOneTextEntryView"
+			 x:Name="view"
+			 >
+	<!--x:DataType="local:GetOneTextEntryViewModel"
+	x:CompileBindings="True"-->
+	<Design.DataContext>
+		<local:GetOneTextEntryViewModel/>
+	</Design.DataContext>
+	<Grid RowDefinitions="Auto,Auto">
+		<TextBlock Text="{Binding Message}" Margin="0,5" />
+		<TextBox Grid.Row="1" Text="{Binding TextEntry}" Watermark="Enter the text here"/>
+	</Grid>
+</UserControl>
