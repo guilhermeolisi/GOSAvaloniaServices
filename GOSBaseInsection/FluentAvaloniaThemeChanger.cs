@@ -5,17 +5,20 @@ using BaseLibrary;
 using FluentAvalonia.Styling;
 using Splat;
 
-namespace GOSBaseInsection;
+namespace GOSBaseInjection;
 
 public class FluentAvaloniaThemeChanger : IThemeChanger
 {
-    IThemeCollection _themeCollection;
-    IThemeCollection _transparencyCollection;
-
-    public FluentAvaloniaThemeChanger(IThemeCollection? themeCollection = null, IThemeCollection? transparencyCollection = null)
+    //IThemeCollectionProvider _themeProvider;
+    //IThemeCollectionProvider _transparencyProvider;
+    List<(char type, IThemeBase theme)>? _themes;
+    List<(char type, IThemeBase theme)>? _transparencies;
+    public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
-        _themeCollection = themeCollection ?? Locator.Current.GetService<IThemeCollection>("theme")!;
-        _transparencyCollection = transparencyCollection ?? Locator.Current.GetService<IThemeCollection>("transparency");
+        var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme")!;
+        var _transparencyProvider = transparencyCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("transparency")!;
+        _themes = _themeProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
+        _transparencies = _transparencyProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
     }
     char? lastTheme;
     public async Task SetTheme(char theme)
@@ -53,7 +56,7 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
 
             }, (DispatcherPriority)1);
             lastTheme = theme == 'D' ? 'D' : 'L';
-            await SetTransparency(lastIsTransparent == true, lastTheme);
+            await SetTransparency(lastIsTransparent == true, lastIsFullTransparent == true, lastTheme);
         }
         catch (Exception)
         {
@@ -61,16 +64,17 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         }
     }
     bool? lastIsTransparent;
-    public async Task SetTransparency(bool isTransparent, char? type)
+    bool? lastIsFullTransparent;
+    public async Task SetTransparency(bool isTransparent, bool isAllTransparent, char? type)
     {
         IThemeTransparencyBase theme = null;
         if (type is null)
             type = lastTheme;
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            for (int i = 0; i < _transparencyCollection.Length; i++)
+            for (int i = 0; i < _transparencies?.Count; i++)
             {
-                if (_transparencyCollection[i].theme is IThemeTransparencyBase t && t.Transparency == isTransparent && t.Type == type)
+                if (_transparencies[i].theme is IThemeTransparencyBase t && t.Transparency == isTransparent && (!isTransparent || t.isAllTransparent == isAllTransparent) && t.Type == type)
                 {
                     theme = t;
                 }
@@ -90,17 +94,17 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             }
             else
             {
-
+                //TODO ver o que fazer neste caso
             }
         });
         lastIsTransparent = isTransparent;
-
+        lastIsFullTransparent = isAllTransparent;
     }
     private Styles? FindTheme(char type)
     {
-        for (int i = 0; i < _themeCollection.Length; i++)
+        for (int i = 0; i < _themes?.Count; i++)
         {
-            if (type == _themeCollection[i].type && _themeCollection[i].theme is Styles styles)
+            if (type == _themes[i].type && _themes[i].theme is Styles styles)
                 return styles;
         }
         return null;
