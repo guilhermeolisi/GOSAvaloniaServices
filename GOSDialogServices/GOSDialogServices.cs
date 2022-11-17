@@ -205,8 +205,19 @@ public class GOSDialogServices : IDialogService
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
-        if (desktopLifetime is null || desktopLifetime.MainWindow is null || string.IsNullOrWhiteSpace(message) || buttons is null || buttons.Length != 2)
-            return null;
+
+        if (message is null)
+            throw new ArgumentNullException(nameof(message));
+        if (message is null)
+            throw new ArgumentException("the message can't be empty", nameof(message));
+
+        if (buttons is null)
+            throw new ArgumentNullException(nameof(buttons));
+        if (buttons.Length != 2)
+            throw new ArgumentOutOfRangeException(nameof(buttons), "must be a array with lenght 2");
+
+        if (desktopLifetime is null || desktopLifetime.MainWindow is null)
+            throw new ApplicationException("The app must have a window to show the dialog");
 
         var contentVM = new GetOneTextEntryViewModel(message, entry);
         var content = new GetOneTextEntryView() { DataContext = contentVM };
@@ -227,7 +238,7 @@ public class GOSDialogServices : IDialogService
             while (!UIDispatcher.CheckAccess() && result is null) { }
         }
 
-        if (result == ContentDialogResult.None)
+        if (result is null || result == ContentDialogResult.None)
             return null;
 
         return contentVM.TextEntry;
@@ -249,6 +260,71 @@ public class GOSDialogServices : IDialogService
             };
             dlg.Content = content;
             dlg.IsPrimaryButtonEnabled = false;
+            result = await dlg.ShowAsync();
+        }
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="viewmodel">The viewmodel must have a valid view to the viewlocator</param>
+    /// <param name="title"></param>
+    /// <param name="buttons"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ApplicationException"></exception>
+    public async Task<bool?> FromViewModelDialog(object viewmodel, string title, string[] buttons)
+    {
+        var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+
+        if (viewmodel is null)
+            throw new ArgumentNullException(nameof(viewmodel));
+        if (buttons is null)
+            throw new ArgumentNullException(nameof(buttons));
+        if (buttons.Length == 0 || buttons.Length > 3)
+            throw new ArgumentOutOfRangeException(nameof(buttons), "must be a array with length between 1 or 3");
+
+        if (desktopLifetime is null || desktopLifetime.MainWindow is null)
+            throw new ApplicationException("The app must have a window to show the dialog");
+
+        ContentDialogResult? result = null;
+        if (UIDispatcher.CheckAccess())
+        {
+            await method();
+        }
+        else
+        {
+            UIDispatcher.Post(async () =>
+            {
+                await method();
+            }, DispatcherPriority.Send);
+
+            while (!UIDispatcher.CheckAccess() && result is null) { }
+        }
+
+        if (result is null || result == ContentDialogResult.None)
+            return null;
+
+        return result == ContentDialogResult.Primary;
+
+        async Task method()
+        {
+            ContentDialog dlg = new ContentDialog()
+            {
+                Title = title,
+                PrimaryButtonText = buttons[0],
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            if (buttons.Length >= 2)
+            {
+                dlg.CloseButtonText = buttons[buttons.Length - 1];
+            }
+            if (buttons.Length == 3)
+            {
+                dlg.CloseButtonText = buttons[1];
+                dlg.IsSecondaryButtonEnabled = true;
+            }
+            dlg.Content = viewmodel;
             result = await dlg.ShowAsync();
         }
     }
