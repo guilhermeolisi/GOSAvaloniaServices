@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Threading;
 using BaseLibrary;
 using FluentAvalonia.UI.Controls;
@@ -273,7 +274,7 @@ public class GOSDialogServices : IDialogService
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="ApplicationException"></exception>
-    public async Task<bool?> FromViewModelDialog(object viewmodel, string title, string[] buttons)
+    public async Task<bool?> FromViewModelDialog(object viewmodel, string? title, string[] buttons, byte[]? background)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
@@ -283,7 +284,8 @@ public class GOSDialogServices : IDialogService
             throw new ArgumentNullException(nameof(buttons));
         if (buttons.Length == 0 || buttons.Length > 3)
             throw new ArgumentOutOfRangeException(nameof(buttons), "must be a array with length between 1 or 3");
-
+        if (background is not null && background.Length != 4)
+            throw new ArgumentOutOfRangeException(nameof(background), "must be a array with length between 4. Alpha and RGB");
         if (desktopLifetime is null || desktopLifetime.MainWindow is null)
             throw new ApplicationException("The app must have a window to show the dialog");
 
@@ -324,6 +326,8 @@ public class GOSDialogServices : IDialogService
                 dlg.CloseButtonText = buttons[1];
                 dlg.IsSecondaryButtonEnabled = true;
             }
+            if (background is not null)
+                dlg.Background = new SolidColorBrush(new Color(background[0], background[1], background[2], background[3]));
             dlg.Content = viewmodel;
             result = await dlg.ShowAsync();
         }
