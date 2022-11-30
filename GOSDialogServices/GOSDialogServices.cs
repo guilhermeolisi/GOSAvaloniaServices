@@ -202,7 +202,7 @@ public class GOSDialogServices : IDialogService
             result = await dlg.ShowAsync();
         }
     }
-    public async Task<string?> GetOneEntryDialog(string message, string entry, string[] buttons)
+    public async Task<string?> GetOneEntryDialog(string message, string entry, string waterMark, bool canSameInitialEntry, string[] buttons)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
@@ -220,7 +220,7 @@ public class GOSDialogServices : IDialogService
         if (desktopLifetime is null || desktopLifetime.MainWindow is null)
             throw new ApplicationException("The app must have a window to show the dialog");
 
-        var contentVM = new GetOneTextEntryViewModel(message, entry);
+        var contentVM = new GetOneTextEntryViewModel(message, entry, waterMark);
         var content = new GetOneTextEntryView() { DataContext = contentVM };
         string initialEntry = entry is null ? null : entry[..];
 
@@ -257,10 +257,10 @@ public class GOSDialogServices : IDialogService
             {
                 if (e.PropertyName != "TextEntry")
                     return;
-                dlg.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(contentVM.TextEntry) && contentVM.TextEntry != initialEntry;
+                dlg.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(contentVM.TextEntry) && (canSameInitialEntry || contentVM.TextEntry != initialEntry);
             };
             dlg.Content = content;
-            dlg.IsPrimaryButtonEnabled = false;
+            //dlg.IsPrimaryButtonEnabled = false;
             result = await dlg.ShowAsync();
         }
     }

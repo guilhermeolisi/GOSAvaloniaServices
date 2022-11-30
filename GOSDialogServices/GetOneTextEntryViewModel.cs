@@ -14,9 +14,20 @@ public class GetOneTextEntryViewModel : ReactiveObject
     public string? TextEntry { get; set; }
     [Reactive]
     public string? Message { get; set; }
-    public GetOneTextEntryViewModel(string message, string? entry)
+    public string? Watermark { get; set; }
+    /// <summary>
+    /// Só para design
+    /// </summary>
+    public GetOneTextEntryViewModel()
+    {
+        Message = "Message here";
+        TextEntry = string.Empty;
+        Watermark = "watermark";
+    }
+    public GetOneTextEntryViewModel(string message, string? entry, string? watermark)
     {
         Message = message;
         TextEntry = entry;
+        Watermark = watermark;
     }
 }
