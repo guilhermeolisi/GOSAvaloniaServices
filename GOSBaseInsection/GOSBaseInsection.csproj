@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BaseLibrary\BaseInterfaceInjection\BaseInterfaceInjection.csproj" />
+    <ProjectReference Include="..\..\BaseLibrary\BaseInterfaceInjection\BaseInjectionInterface.csproj" />
   </ItemGroup>
 
 </Project>
