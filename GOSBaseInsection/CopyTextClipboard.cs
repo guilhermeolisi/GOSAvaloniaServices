@@ -7,9 +7,7 @@ public class CopyTextClipboard : ICopyTextClipboard
     Func<char, object, Task<object?>>? InteractionInvoke;
     public void SetInteractionInvoke(Func<char, object, Task<object?>>? interactionInvoke)
     {
-        InteractionInvoke = interactionInvoke;
-        if (InteractionInvoke is null)
-            throw new NullReferenceException();
+        InteractionInvoke = interactionInvoke ?? throw new NullReferenceException();
     }
     public async Task<string?> CopyFromClipBoard()
     {
