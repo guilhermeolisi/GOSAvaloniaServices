@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BaseLibrary\BaseDialogInterfaceInjection\BaseDialogInjectionInterface.csproj" />
+    <ProjectReference Include="..\GOSDialogServicesInterface\GOSDialogServicesInterface.csproj" />
   </ItemGroup>
 
   <ItemGroup>

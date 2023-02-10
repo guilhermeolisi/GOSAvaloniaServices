@@ -2,7 +2,6 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using Avalonia.Threading;
-using BaseLibrary;
 using FluentAvalonia.UI.Controls;
 
 namespace GOSAvaloniaServices;
