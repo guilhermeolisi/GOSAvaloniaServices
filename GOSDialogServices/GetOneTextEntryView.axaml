@@ -9,9 +9,9 @@
 			 >
 	<!--x:DataType="local:GetOneTextEntryViewModel"
 	x:CompileBindings="True"-->
-	<Design.DataContext>
+	<!--<Design.DataContext>
 		<local:GetOneTextEntryViewModel/>
-	</Design.DataContext>
+	</Design.DataContext>-->
 	<Grid RowDefinitions="Auto,Auto">
 		<TextBlock Text="{Binding Message}" Margin="0,5" />
 		<TextBox Grid.Row="1" Text="{Binding TextEntry}" Watermark="{Binding Watermark}"/>

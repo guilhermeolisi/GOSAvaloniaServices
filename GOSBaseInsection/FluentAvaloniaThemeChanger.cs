@@ -1,4 +1,6 @@
 ﻿using Avalonia;
+using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using BaseLibrary;
@@ -11,57 +13,97 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
 {
     //IThemeCollectionProvider _themeProvider;
     //IThemeCollectionProvider _transparencyProvider;
+    private FluentAvaloniaTheme _faTheme;
     List<(char type, IThemeBase theme)>? _themes;
     List<(char type, IThemeBase theme)>? _transparencies;
+
+    public byte[] SystemAccentColor { get; private set; }
+    public byte[] SystemAccentColorLigth { get; private set; }
+    public byte[] SystemAccentColorDark { get; private set; }
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
         var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme")!;
         var _transparencyProvider = transparencyCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("transparency")!;
         _themes = _themeProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
         _transparencies = _transparencyProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
+
+        Application.Current.PlatformSettings.ColorValuesChanged += PlatformSettings_ColorValuesChanged;
+        
+#if DEBUG
+
+#endif
+
+        //_faTheme.PreferSystemTheme = false;
     }
-    char? lastTheme;
-    public async Task SetTheme(char theme)
+
+    private void PlatformSettings_ColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
     {
+        if (lastTheme is null || lastTheme == 'S')
+            SetTheme('S');
+        GetSystemColors(); //não está funcionando para atualizar as cores do background da janela pq acho que ele é processado antes do FluentAvaloniaTheme
+    }
+
+    char? lastTheme;
+    bool isDark;
+    public async Task<bool> SetTheme(char theme)
+    {
+        GetFATheme();
         try
         {
+            isDark = theme == 'D';
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                var thm = AvaloniaLocator.Current.GetService<FluentAvaloniaTheme>();
+                //var thm = AvaloniaLocator.Current.GetService<FluentAvaloniaTheme>();
+
                 //Uri uri;
                 switch (theme)
                 {
                     case 'L':
-                        thm.RequestedTheme = "Light";
+                        //thm.RequestedTheme = "Light";
+                        Application.Current.RequestedThemeVariant = ThemeVariant.Light;
+                        _faTheme.PreferSystemTheme = false;
                         break;
                     case 'D':
-                        thm.RequestedTheme = "Dark";
+                        //thm.RequestedTheme = "Dark";
+                        Application.Current.RequestedThemeVariant = ThemeVariant.Dark;
+                        _faTheme.PreferSystemTheme = false;
                         break;
                     case 'H':
-                        thm.RequestedTheme = "HighContrast";
+                        //thm.RequestedTheme = "HighContrast";
+                        Application.Current.RequestedThemeVariant = FluentAvaloniaTheme.HighContrastTheme;
+                        _faTheme.PreferSystemTheme = false;
                         break;
+                    case 'S':
                     default:
-                        thm.RequestedTheme = "Light";
+                        //Application.Current.RequestedThemeVariant = null;
+                        _faTheme.PreferSystemTheme = true;
+                        isDark = Application.Current.ActualThemeVariant == ThemeVariant.Dark;
+                        //thm.RequestedTheme = "Light";
                         break;
                 }
+
+                //Muda as customizações do tema do Nimloth
+                char themeTemp = isDark ? 'D' : 'L';
                 for (int i = 0; i < Application.Current.Styles.Count; i++)
                 {
                     if ((Application.Current.Styles[i] is IThemeBase t && t is not IThemeTransparencyBase) || (Application.Current.Styles[i].Children.Count > 0 && Application.Current.Styles[i].Children[0] is IThemeBase t2 && t2 is not IThemeTransparencyBase))
                     {
-                        Application.Current.Styles[i] = FindTheme(theme);
+                        Application.Current.Styles[i] = FindTheme(themeTemp);
                         break;
                     }
                 }
 
 
             }, (DispatcherPriority)1);
-            lastTheme = theme == 'D' ? 'D' : 'L';
+            lastTheme = theme; //isDark ? 'D' : 'L'; //lastTheme = theme == 'D' ? 'D' : 'L';
             await SetTransparency(lastIsTransparent == true, lastIsFullTransparent == true, lastTheme);
+            return isDark;
         }
         catch (Exception)
         {
             Console.WriteLine($"some error has executed");
         }
+        return false;
     }
     bool? lastIsTransparent;
     bool? lastIsFullTransparent;
@@ -70,6 +112,12 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         IThemeTransparencyBase theme = null;
         if (type is null)
             type = lastTheme;
+
+        if (type == 'H')
+            type = 'L';
+        else if (type == 'S')
+            type = isDark ? 'D' : 'L';
+
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             for (int i = 0; i < _transparencies?.Count; i++)
@@ -90,7 +138,7 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
                         break;
                     }
                 }
-                
+
             }
             else
             {
@@ -99,6 +147,73 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         });
         lastIsTransparent = isTransparent;
         lastIsFullTransparent = isAllTransparent;
+    }
+    public void SetAccentColor(byte[]? color)
+    {
+        GetFATheme();
+        if (color?.Length != 4)
+            color = null;
+        if (color is null)
+        {
+            //_faTheme.PreferUserAccentColor = true;
+            _faTheme.CustomAccentColor = null;
+        }
+        else
+        {
+            //_faTheme.PreferUserAccentColor = false;
+            _faTheme.CustomAccentColor = new Color(color[0], color[1], color[2], color[3]);
+        }
+    }
+    Action SystemColorUpdate;
+    public void SubscribeSystemColorUpdate(Action action) => SystemColorUpdate = action;
+    private void GetSystemColors()
+    {
+        GetFATheme();
+        bool changed = false;
+        //_faTheme.
+        if (_faTheme.TryGetResource("SystemAccentColor", null, out var curColor))
+        {
+            Color color = (Color)curColor;
+
+#if DEBUG
+            var trash = Application.Current.PlatformSettings.GetColorValues();
+#endif
+
+            if (SystemAccentColor is null || SystemAccentColor[0] != color.A || SystemAccentColor[1] != color.R || SystemAccentColor[2] != color.G || SystemAccentColor[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColor = new byte[] { color.A, color.R, color.G, color.B };
+            }
+        }
+        if (_faTheme.TryGetResource("SystemAccentColorLight2", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorLigth is null || SystemAccentColorLigth[0] != color.A || SystemAccentColorLigth[1] != color.R || SystemAccentColorLigth[2] != color.G || SystemAccentColorLigth[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorLigth = new byte[] { color.A, color.R, color.G, color.B };
+            }
+        }
+        if (_faTheme.TryGetResource("SystemAccentColorDark2", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorDark is null || SystemAccentColorDark[0] != color.A || SystemAccentColorDark[1] != color.R || SystemAccentColorDark[2] != color.G || SystemAccentColorDark[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorDark = new byte[] { color.A, color.R, color.G, color.B };
+            }
+        }
+        if (changed)
+            SystemColorUpdate?.Invoke();
+    }
+    private void GetFATheme()
+    {
+        if (_faTheme is null)
+        {
+            _faTheme = Application.Current.Styles.FirstOrDefault(x => x is FluentAvaloniaTheme) as FluentAvaloniaTheme;
+            _faTheme.PreferUserAccentColor = true;
+            GetSystemColors();
+        }
     }
     private Styles? FindTheme(char type)
     {
