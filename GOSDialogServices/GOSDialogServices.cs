@@ -57,7 +57,7 @@ public class GOSDialogServices : IDialogService
                 (dlg.Filters ??= new()).Add(new FileDialogFilter() { Name = extensions[i].Item2, Extensions = extensions[i].Item1 });
             }
 
-            if (!string.IsNullOrWhiteSpace(initialFolder))
+            if (!string.IsNullOrWhiteSpace(initialFolder) && Directory.Exists(initialFolder))
                 dlg.Directory = initialFolder;
             var temp = dlg.ShowAsync(desktopLifetime.MainWindow);
             await temp;

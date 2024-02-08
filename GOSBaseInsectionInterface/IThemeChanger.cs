@@ -9,8 +9,10 @@ namespace BaseLibrary;
 public interface IThemeChanger
 {
     byte[] SystemAccentColor { get; }
-    byte[] SystemAccentColorLigth { get; }
-    byte[] SystemAccentColorDark { get; }
+    byte[] SystemAccentColorLigth2 { get; }
+    byte[] SystemAccentColorDark2 { get; }
+    byte[] SystemAccentColorLigth3 { get; }
+    byte[] SystemAccentColorDark3 { get; }
 
     void SetAccentColor(byte[]? color);
     Task<bool> SetTheme(char theme);

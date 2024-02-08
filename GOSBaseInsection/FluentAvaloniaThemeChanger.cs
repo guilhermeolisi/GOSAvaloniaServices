@@ -18,8 +18,10 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     List<(char type, IThemeBase theme)>? _transparencies;
 
     public byte[] SystemAccentColor { get; private set; }
-    public byte[] SystemAccentColorLigth { get; private set; }
-    public byte[] SystemAccentColorDark { get; private set; }
+    public byte[] SystemAccentColorLigth2 { get; private set; }
+    public byte[] SystemAccentColorDark2 { get; private set; }
+    public byte[] SystemAccentColorLigth3 { get; private set; }
+    public byte[] SystemAccentColorDark3 { get; private set; }
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
         var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme")!;
@@ -182,25 +184,43 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             if (SystemAccentColor is null || SystemAccentColor[0] != color.A || SystemAccentColor[1] != color.R || SystemAccentColor[2] != color.G || SystemAccentColor[3] != color.B)
             {
                 changed = true;
-                SystemAccentColor = new byte[] { color.A, color.R, color.G, color.B };
+                SystemAccentColor = [color.A, color.R, color.G, color.B];
             }
         }
         if (_faTheme.TryGetResource("SystemAccentColorLight2", null, out curColor))
         {
             Color color = (Color)curColor;
-            if (SystemAccentColorLigth is null || SystemAccentColorLigth[0] != color.A || SystemAccentColorLigth[1] != color.R || SystemAccentColorLigth[2] != color.G || SystemAccentColorLigth[3] != color.B)
+            if (SystemAccentColorLigth2 is null || SystemAccentColorLigth2[0] != color.A || SystemAccentColorLigth2[1] != color.R || SystemAccentColorLigth2[2] != color.G || SystemAccentColorLigth2[3] != color.B)
             {
                 changed = true;
-                SystemAccentColorLigth = new byte[] { color.A, color.R, color.G, color.B };
+                SystemAccentColorLigth2 = [color.A, color.R, color.G, color.B];
+            }
+        }
+        if (_faTheme.TryGetResource("SystemAccentColorLight3", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorLigth3 is null || SystemAccentColorLigth3[0] != color.A || SystemAccentColorLigth3[1] != color.R || SystemAccentColorLigth3[2] != color.G || SystemAccentColorLigth3[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorLigth3 = [color.A, color.R, color.G, color.B];
             }
         }
         if (_faTheme.TryGetResource("SystemAccentColorDark2", null, out curColor))
         {
             Color color = (Color)curColor;
-            if (SystemAccentColorDark is null || SystemAccentColorDark[0] != color.A || SystemAccentColorDark[1] != color.R || SystemAccentColorDark[2] != color.G || SystemAccentColorDark[3] != color.B)
+            if (SystemAccentColorDark2 is null || SystemAccentColorDark2[0] != color.A || SystemAccentColorDark2[1] != color.R || SystemAccentColorDark2[2] != color.G || SystemAccentColorDark2[3] != color.B)
             {
                 changed = true;
-                SystemAccentColorDark = new byte[] { color.A, color.R, color.G, color.B };
+                SystemAccentColorDark2 = [color.A, color.R, color.G, color.B];
+            }
+        }
+        if (_faTheme.TryGetResource("SystemAccentColorDark3", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorDark3 is null || SystemAccentColorDark3[0] != color.A || SystemAccentColorDark3[1] != color.R || SystemAccentColorDark3[2] != color.G || SystemAccentColorDark3[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorDark3 = [color.A, color.R, color.G, color.B];
             }
         }
         if (changed)
