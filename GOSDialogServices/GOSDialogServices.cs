@@ -295,12 +295,14 @@ public class GOSDialogServices : IDialogService
         }
         else
         {
+            var waitHandle = new ManualResetEvent(false);
             UIDispatcher.Post(async () =>
             {
                 await method();
+                waitHandle.Set();
             }, DispatcherPriority.Send);
-
-            while (!UIDispatcher.CheckAccess() && result is null) { }
+            waitHandle.WaitOne();
+            //while (!UIDispatcher.CheckAccess() && result is null) { }
         }
 
         if (result is null || result == ContentDialogResult.None)
@@ -310,7 +312,7 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
-            ContentDialog dlg = new ContentDialog()
+            ContentDialog dlg = new()
             {
                 Title = title,
                 PrimaryButtonText = buttons[0],
