@@ -1,5 +1,4 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 
 namespace GOSBaseInjection;
 
@@ -25,6 +24,11 @@ public class CopyTextClipboard : ICopyTextClipboard
     {
         if (message is not null)
             await topLevel!.Clipboard!.SetTextAsync(message);
-            //await Application.Current.Clipboard.SetTextAsync(message);
+        //await Application.Current.Clipboard.SetTextAsync(message);
+    }
+    public async Task<bool> IsTextInClipBoard()
+    {
+        return !string.IsNullOrEmpty(await topLevel!.Clipboard!.GetTextAsync());
+        //return Application.Current.Clipboard.ContainsText();
     }
 }
