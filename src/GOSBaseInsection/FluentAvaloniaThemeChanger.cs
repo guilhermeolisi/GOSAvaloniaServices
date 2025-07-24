@@ -1,6 +1,5 @@
 ﻿using Avalonia;
 using Avalonia.Media;
-using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using BaseLibrary;
@@ -11,31 +10,24 @@ namespace GOSBaseInjection;
 
 public class FluentAvaloniaThemeChanger : IThemeChanger
 {
-    //IThemeCollectionProvider _themeProvider;
-    //IThemeCollectionProvider _transparencyProvider;
     private FluentAvaloniaTheme _faTheme;
     List<(char type, IThemeBase theme)>? _themes;
     List<(char type, IThemeBase theme)>? _transparencies;
 
     public byte[] SystemAccentColor { get; private set; }
-    public byte[] SystemAccentColorLigth2 { get; private set; }
+    public byte[] SystemAccentColorLight2 { get; private set; }
     public byte[] SystemAccentColorDark2 { get; private set; }
-    public byte[] SystemAccentColorLigth3 { get; private set; }
+    public byte[] SystemAccentColorLight3 { get; private set; }
     public byte[] SystemAccentColorDark3 { get; private set; }
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
-        var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme")!;
-        var _transparencyProvider = transparencyCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("transparency")!;
+        var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme") ?? throw new ArgumentNullException(nameof(themeCollection), "themeCollection cannot be null");
+        var _transparencyProvider = transparencyCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("transparency") ?? throw new ArgumentNullException(nameof(transparencyCollection), "transparencyCollection cannot be null");
         _themes = _themeProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
         _transparencies = _transparencyProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
 
         Application.Current.PlatformSettings.ColorValuesChanged += PlatformSettings_ColorValuesChanged;
-        
-#if DEBUG
 
-#endif
-
-        //_faTheme.PreferSystemTheme = false;
     }
 
     private void PlatformSettings_ColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
@@ -111,7 +103,7 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     bool? lastIsFullTransparent;
     public async Task SetTransparency(bool isTransparent, bool isAllTransparent, char? type)
     {
-        IThemeTransparencyBase theme = null;
+        IThemeTransparencyBase? theme = null;
         if (type is null)
             type = lastTheme;
 
@@ -157,22 +149,25 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             color = null;
         if (color is null)
         {
-            //_faTheme.PreferUserAccentColor = true;
+            _faTheme.PreferUserAccentColor = true;
             _faTheme.CustomAccentColor = null;
         }
         else
         {
-            //_faTheme.PreferUserAccentColor = false;
+            _faTheme.PreferUserAccentColor = false;
             _faTheme.CustomAccentColor = new Color(color[0], color[1], color[2], color[3]);
         }
+
+        GetSystemColors();
     }
-    Action SystemColorUpdate;
-    public void SubscribeSystemColorUpdate(Action action) => SystemColorUpdate = action;
+    Action systemColorUpdate;
+    public void SubscribeSystemColorUpdate(Action action) => systemColorUpdate = action;
     private void GetSystemColors()
     {
+        // SystemAccentColor não é o color do OS, mas do próprio FluentAvalonia, então o CustomAccentColor aparecerá também nestes resources
         GetFATheme();
         bool changed = false;
-        //_faTheme.
+
         if (_faTheme.TryGetResource("SystemAccentColor", null, out var curColor))
         {
             Color color = (Color)curColor;
@@ -190,19 +185,19 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         if (_faTheme.TryGetResource("SystemAccentColorLight2", null, out curColor))
         {
             Color color = (Color)curColor;
-            if (SystemAccentColorLigth2 is null || SystemAccentColorLigth2[0] != color.A || SystemAccentColorLigth2[1] != color.R || SystemAccentColorLigth2[2] != color.G || SystemAccentColorLigth2[3] != color.B)
+            if (SystemAccentColorLight2 is null || SystemAccentColorLight2[0] != color.A || SystemAccentColorLight2[1] != color.R || SystemAccentColorLight2[2] != color.G || SystemAccentColorLight2[3] != color.B)
             {
                 changed = true;
-                SystemAccentColorLigth2 = [color.A, color.R, color.G, color.B];
+                SystemAccentColorLight2 = [color.A, color.R, color.G, color.B];
             }
         }
         if (_faTheme.TryGetResource("SystemAccentColorLight3", null, out curColor))
         {
             Color color = (Color)curColor;
-            if (SystemAccentColorLigth3 is null || SystemAccentColorLigth3[0] != color.A || SystemAccentColorLigth3[1] != color.R || SystemAccentColorLigth3[2] != color.G || SystemAccentColorLigth3[3] != color.B)
+            if (SystemAccentColorLight3 is null || SystemAccentColorLight3[0] != color.A || SystemAccentColorLight3[1] != color.R || SystemAccentColorLight3[2] != color.G || SystemAccentColorLight3[3] != color.B)
             {
                 changed = true;
-                SystemAccentColorLigth3 = [color.A, color.R, color.G, color.B];
+                SystemAccentColorLight3 = [color.A, color.R, color.G, color.B];
             }
         }
         if (_faTheme.TryGetResource("SystemAccentColorDark2", null, out curColor))
@@ -224,7 +219,7 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             }
         }
         if (changed)
-            SystemColorUpdate?.Invoke();
+            systemColorUpdate?.Invoke();
     }
     private void GetFATheme()
     {
