@@ -15,9 +15,11 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     List<(char type, IThemeBase theme)>? _transparencies;
 
     public byte[] SystemAccentColor { get; private set; }
+    public byte[] SystemAccentColorLight1 { get; private set; }
     public byte[] SystemAccentColorLight2 { get; private set; }
-    public byte[] SystemAccentColorDark2 { get; private set; }
     public byte[] SystemAccentColorLight3 { get; private set; }
+    public byte[] SystemAccentColorDark1 { get; private set; }
+    public byte[] SystemAccentColorDark2 { get; private set; }
     public byte[] SystemAccentColorDark3 { get; private set; }
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
@@ -182,6 +184,15 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
                 SystemAccentColor = [color.A, color.R, color.G, color.B];
             }
         }
+        if (_faTheme.TryGetResource("SystemAccentColorLight1", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorLight1 is null || SystemAccentColorLight1[0] != color.A || SystemAccentColorLight1[1] != color.R || SystemAccentColorLight1[2] != color.G || SystemAccentColorLight1[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorLight1 = [color.A, color.R, color.G, color.B];
+            }
+        }
         if (_faTheme.TryGetResource("SystemAccentColorLight2", null, out curColor))
         {
             Color color = (Color)curColor;
@@ -198,6 +209,15 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             {
                 changed = true;
                 SystemAccentColorLight3 = [color.A, color.R, color.G, color.B];
+            }
+        }
+        if (_faTheme.TryGetResource("SystemAccentColorDark1", null, out curColor))
+        {
+            Color color = (Color)curColor;
+            if (SystemAccentColorDark1 is null || SystemAccentColorDark1[0] != color.A || SystemAccentColorDark1[1] != color.R || SystemAccentColorDark1[2] != color.G || SystemAccentColorDark1[3] != color.B)
+            {
+                changed = true;
+                SystemAccentColorDark1 = [color.A, color.R, color.G, color.B];
             }
         }
         if (_faTheme.TryGetResource("SystemAccentColorDark2", null, out curColor))
