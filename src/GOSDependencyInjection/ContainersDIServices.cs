@@ -5,7 +5,7 @@ namespace GOSAvaloniaServices;
 
 public static class ContainersDIServices
 {
-    static IContainer containerGOS = BaseLibrary.DependencyInjection.Locator.ConstanteContainer;
+    static IContainer containerGOS = BaseLibrary.DependencyInjection.Locator.ConstantContainer;
     static IMutableDependencyResolver containerSplat = Splat.Locator.CurrentMutable;
     public static void RegisterSingleton<TService, TImplementation>() where TImplementation : TService, new()
     {
