@@ -21,6 +21,18 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     public byte[] SystemAccentColorDark1 { get; private set; }
     public byte[] SystemAccentColorDark2 { get; private set; }
     public byte[] SystemAccentColorDark3 { get; private set; }
+
+    // ===== DIAGNÓSTICO TEMPORÁRIO (accent color no snap) — REMOVER depois de investigar =====
+    private static readonly string _debugLogPath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "nimloth-accent-debug.log");
+    private static void DebugLog(string message)
+    {
+        string line = $"{DateTime.Now:HH:mm:ss.fff} [ACCENT] {message}";
+        try { Console.WriteLine(line); } catch { }
+        try { File.AppendAllText(_debugLogPath, line + Environment.NewLine); } catch { }
+    }
+    // =======================================================================================
+
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
         var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme") ?? throw new ArgumentNullException(nameof(themeCollection), "themeCollection cannot be null");
@@ -30,13 +42,32 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
 
         Application.Current.PlatformSettings.ColorValuesChanged += PlatformSettings_ColorValuesChanged;
 
+        // ===== DIAGNÓSTICO TEMPORÁRIO =====
+        DebugLog($"=== ctor === log em: {_debugLogPath}");
+        try
+        {
+            var cv = Application.Current.PlatformSettings.GetColorValues();
+            DebugLog($"ctor GetColorValues: AccentColor1={cv.AccentColor1} ThemeVariant={cv.ThemeVariant}");
+        }
+        catch (Exception ex) { DebugLog("ctor GetColorValues EX: " + ex); }
+        // ==================================
     }
 
     private void PlatformSettings_ColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
     {
-        if (lastTheme is null || lastTheme == 'S')
-            SetTheme('S');
-        GetSystemColors(); //não está funcionando para atualizar as cores do background da janela pq acho que ele é processado antes do FluentAvaloniaTheme
+        // ===== DIAGNÓSTICO TEMPORÁRIO =====
+        DebugLog($"ColorValuesChanged DISPAROU: e.AccentColor1={e.AccentColor1} e.ThemeVariant={e.ThemeVariant}");
+        // ==================================
+
+        // CORREÇÃO (A): adiar o re-read para rodar APÓS o handler do próprio FluentAvaloniaTheme
+        // ter regenerado o resource "SystemAccentColor". No snap o portal responde tarde (cold start),
+        // então ler de forma síncrona aqui pegava o valor antigo (ver bug histórico abaixo).
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (lastTheme is null || lastTheme == 'S')
+                SetTheme('S');
+            GetSystemColors(); //não está funcionando para atualizar as cores do background da janela pq acho que ele é processado antes do FluentAvaloniaTheme
+        }, DispatcherPriority.Background);
     }
 
     char? lastTheme;
@@ -168,6 +199,17 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     {
         // SystemAccentColor não é o color do OS, mas do próprio FluentAvalonia, então o CustomAccentColor aparecerá também nestes resources
         GetFATheme();
+
+        // ===== DIAGNÓSTICO TEMPORÁRIO =====
+        try
+        {
+            var cvDbg = Application.Current.PlatformSettings.GetColorValues();
+            _faTheme.TryGetResource("SystemAccentColor", null, out var resDbg);
+            DebugLog($"GetSystemColors: PlatformSettings.AccentColor1={cvDbg.AccentColor1} | resource SystemAccentColor={(resDbg is Color rcDbg ? rcDbg.ToString() : "null")}");
+        }
+        catch (Exception ex) { DebugLog("GetSystemColors EX: " + ex); }
+        // ==================================
+
         bool changed = false;
 
         if (_faTheme.TryGetResource("SystemAccentColor", null, out var curColor))
