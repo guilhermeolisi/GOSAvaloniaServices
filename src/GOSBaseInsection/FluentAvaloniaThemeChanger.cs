@@ -21,18 +21,6 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     public byte[] SystemAccentColorDark1 { get; private set; }
     public byte[] SystemAccentColorDark2 { get; private set; }
     public byte[] SystemAccentColorDark3 { get; private set; }
-
-    // ===== DIAGNÓSTICO TEMPORÁRIO (accent color no snap) — REMOVER depois de investigar =====
-    private static readonly string _debugLogPath =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "nimloth-accent-debug.log");
-    private static void DebugLog(string message)
-    {
-        string line = $"{DateTime.Now:HH:mm:ss.fff} [ACCENT] {message}";
-        try { Console.WriteLine(line); } catch { }
-        try { File.AppendAllText(_debugLogPath, line + Environment.NewLine); } catch { }
-    }
-    // =======================================================================================
-
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
         var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme") ?? throw new ArgumentNullException(nameof(themeCollection), "themeCollection cannot be null");
@@ -41,32 +29,24 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         _transparencies = _transparencyProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
 
         Application.Current.PlatformSettings.ColorValuesChanged += PlatformSettings_ColorValuesChanged;
-
-        // ===== DIAGNÓSTICO TEMPORÁRIO =====
-        DebugLog($"=== ctor === log em: {_debugLogPath}");
-        try
-        {
-            var cv = Application.Current.PlatformSettings.GetColorValues();
-            DebugLog($"ctor GetColorValues: AccentColor1={cv.AccentColor1} ThemeVariant={cv.ThemeVariant}");
-        }
-        catch (Exception ex) { DebugLog("ctor GetColorValues EX: " + ex); }
-        // ==================================
     }
 
     private void PlatformSettings_ColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
     {
-        // ===== DIAGNÓSTICO TEMPORÁRIO =====
-        DebugLog($"ColorValuesChanged DISPAROU: e.AccentColor1={e.AccentColor1} e.ThemeVariant={e.ThemeVariant}");
-        // ==================================
-
-        // CORREÇÃO (A): adiar o re-read para rodar APÓS o handler do próprio FluentAvaloniaTheme
-        // ter regenerado o resource "SystemAccentColor". No snap o portal responde tarde (cold start),
-        // então ler de forma síncrona aqui pegava o valor antigo (ver bug histórico abaixo).
         Dispatcher.UIThread.Post(() =>
         {
             if (lastTheme is null || lastTheme == 'S')
                 SetTheme('S');
-            GetSystemColors(); //não está funcionando para atualizar as cores do background da janela pq acho que ele é processado antes do FluentAvaloniaTheme
+
+            // CORREÇÃO: no snap (Linux), o portal xdg-desktop responde tarde no startup e o
+            // FluentAvaloniaTheme não regenera seus resources de accent quando a cor chega por este
+            // evento — o resource "SystemAccentColor" permanecia defasado. Empurramos a cor do sistema
+            // explicitamente via CustomAccentColor (mesmo mecanismo de SetAccentColor, que comprovadamente
+            // regenera as variações Light/Dark) para forçar o recompute antes de lermos os resources.
+            if (_useSystemAccent)
+                ApplySystemAccent(e.AccentColor1);
+
+            GetSystemColors();
         }, DispatcherPriority.Background);
     }
 
@@ -182,11 +162,14 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
             color = null;
         if (color is null)
         {
-            _faTheme.PreferUserAccentColor = true;
-            _faTheme.CustomAccentColor = null;
+            // Voltar a seguir a cor do sistema. No snap não basta CustomAccentColor=null (o FA não
+            // re-lê do portal), então espelhamos explicitamente a accent atual do sistema.
+            _useSystemAccent = true;
+            ApplySystemAccent(Application.Current.PlatformSettings.GetColorValues().AccentColor1);
         }
         else
         {
+            _useSystemAccent = false;
             _faTheme.PreferUserAccentColor = false;
             _faTheme.CustomAccentColor = new Color(color[0], color[1], color[2], color[3]);
         }
@@ -199,17 +182,6 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     {
         // SystemAccentColor não é o color do OS, mas do próprio FluentAvalonia, então o CustomAccentColor aparecerá também nestes resources
         GetFATheme();
-
-        // ===== DIAGNÓSTICO TEMPORÁRIO =====
-        try
-        {
-            var cvDbg = Application.Current.PlatformSettings.GetColorValues();
-            _faTheme.TryGetResource("SystemAccentColor", null, out var resDbg);
-            DebugLog($"GetSystemColors: PlatformSettings.AccentColor1={cvDbg.AccentColor1} | resource SystemAccentColor={(resDbg is Color rcDbg ? rcDbg.ToString() : "null")}");
-        }
-        catch (Exception ex) { DebugLog("GetSystemColors EX: " + ex); }
-        // ==================================
-
         bool changed = false;
 
         if (_faTheme.TryGetResource("SystemAccentColor", null, out var curColor))
@@ -288,9 +260,27 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         if (_faTheme is null)
         {
             _faTheme = Application.Current.Styles.FirstOrDefault(x => x is FluentAvaloniaTheme) as FluentAvaloniaTheme;
-            _faTheme.PreferUserAccentColor = true;
+            // Sincroniza a accent inicial com o sistema. No desktop a cor já está disponível aqui; no
+            // snap virá o default e será corrigida adiante pelo ColorValuesChanged quando o portal responder.
+            if (_useSystemAccent)
+                ApplySystemAccent(Application.Current.PlatformSettings.GetColorValues().AccentColor1);
             GetSystemColors();
         }
+    }
+
+    // true = espelhar a accent color do sistema; false = usar a cor custom escolhida pelo usuário.
+    bool _useSystemAccent = true;
+
+    // Empurra a accent color do sistema para o FluentAvaloniaTheme via CustomAccentColor, forçando-o a
+    // recomputar SystemAccentColor + as variações Light1-3/Dark1-3. Necessário porque o caminho nativo
+    // "PreferUserAccentColor" do FA não regenera os resources de forma confiável no snap (Linux).
+    private void ApplySystemAccent(Color systemAccent)
+    {
+        // _faTheme nulo: ainda não inicializado; GetFATheme fará a aplicação inicial. Evita recursão.
+        if (_faTheme is null)
+            return;
+        _faTheme.PreferUserAccentColor = false;
+        _faTheme.CustomAccentColor = systemAccent;
     }
     private Styles? FindTheme(char type)
     {
