@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BaseLibrary\src\BaseLibrary.DependencyInjection\BaseLibrary.DependencyInjection.csproj" />
     <ProjectReference Include="..\..\..\BaseLibrary\src\BaseLibrary.General\BaseLibrary.General.csproj" />
     <ProjectReference Include="..\GOSBaseInsectionInterface\GOSBaseInsectionInterface.csproj" />
   </ItemGroup>

@@ -3,8 +3,8 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using BaseLibrary;
+using BaseLibrary.DependencyInjection;
 using FluentAvalonia.Styling;
-using Splat;
 
 namespace GOSBaseInjection;
 
@@ -23,8 +23,8 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
     public byte[] SystemAccentColorDark3 { get; private set; }
     public FluentAvaloniaThemeChanger(IThemeCollectionProvider? themeCollection = null, IThemeCollectionProvider? transparencyCollection = null)
     {
-        var _themeProvider = themeCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("theme") ?? throw new ArgumentNullException(nameof(themeCollection), "themeCollection cannot be null");
-        var _transparencyProvider = transparencyCollection ?? Locator.Current.GetService<IThemeCollectionProvider>("transparency") ?? throw new ArgumentNullException(nameof(transparencyCollection), "transparencyCollection cannot be null");
+        var _themeProvider = themeCollection ?? Locator.ConstantContainer.Resolve<IThemeCollectionProvider>("theme") ?? throw new ArgumentNullException(nameof(themeCollection), "themeCollection cannot be null");
+        var _transparencyProvider = transparencyCollection ?? Locator.ConstantContainer.Resolve<IThemeCollectionProvider>("transparency") ?? throw new ArgumentNullException(nameof(transparencyCollection), "transparencyCollection cannot be null");
         _themes = _themeProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
         _transparencies = _transparencyProvider.GetAllThemes() as List<(char type, IThemeBase theme)>;
 
