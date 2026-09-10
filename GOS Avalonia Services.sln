@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32811.315
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSBaseInsection", "GOSBaseInsection\GOSBaseInsection.csproj", "{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSBaseInsection", "src\GOSBaseInsection\GOSBaseInsection.csproj", "{8B527CFD-E20F-4F76-B272-6DD8EFEEE6EA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSDialogServices", "GOSDialogServices\GOSDialogServices.csproj", "{B9D67C32-CE43-4DD2-B1E4-7089F6575037}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GOSDialogServices", "src\GOSDialogServices\GOSDialogServices.csproj", "{B9D67C32-CE43-4DD2-B1E4-7089F6575037}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
