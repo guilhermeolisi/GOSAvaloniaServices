@@ -68,7 +68,7 @@ public class CopyTextClipboard : ICopyTextClipboard
     }
     public async Task<bool> IsTextInClipBoard()
     {
-        return !string.IsNullOrEmpty(await topLevel!.Clipboard!.GetTextAsync());
+        return !string.IsNullOrEmpty(await topLevel!.Clipboard!.TryGetTextAsync());
         //return Application.Current.Clipboard.ContainsText();
     }
 }
