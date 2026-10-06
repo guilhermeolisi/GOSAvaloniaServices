@@ -8,7 +8,9 @@ Regras compartilhadas em `../CLAUDE.md`; regras de Avalonia em `../.claude/rules
 - Cada servico tem interface propria (`GOSDialogServicesInterface`,
   `GOSNotificationInterface`) para permitir DI e mock. Manter esse padrao.
 - DI pelo `BaseLibrary.DependencyInjection`.
-- Nao ha testes. Testes novos em `test/<Projeto>.Tests` (xUnit + Moq + FluentAssertions).
+- Testes em `test/<Projeto>.Tests` (xUnit + Moq + FluentAssertions). O primeiro e `test/GOSBaseInsection.Tests`
+  (E095), headless (`Avalonia.Headless.XUnit`, `[AvaloniaFact]`, paralelismo desligado), no modelo do
+  `GOSAvaloniaControl/test/GOSCustomControl.Tests`.
 
 ## Comandos
 
