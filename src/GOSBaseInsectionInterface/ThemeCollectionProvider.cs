@@ -9,5 +9,5 @@ namespace BaseLibrary;
 
 public interface IThemeCollectionProvider
 {
-    IEnumerable<(char type, IThemeBase theme)> GetAllThemes();
+    IEnumerable<(char type, IThemeBase theme)>? GetAllThemes();
 }
