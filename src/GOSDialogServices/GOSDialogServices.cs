@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 
@@ -45,23 +46,20 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
-            var dlg = new OpenFileDialog()
+            IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
+            var options = new FilePickerOpenOptions()
             {
                 Title = "Open File" + (allowMultiple ? "(s)" : ""),
                 AllowMultiple = allowMultiple,
-                InitialFileName = initialFile,
+                SuggestedFileName = initialFile,
+                FileTypeFilter = ToFileTypes(extensions),
             };
 
-            for (int i = 0; i < extensions.Length; i++)
-            {
-                (dlg.Filters ??= new()).Add(new FileDialogFilter() { Name = extensions[i].Item2, Extensions = extensions[i].Item1 });
-            }
-
             if (!string.IsNullOrWhiteSpace(initialFolder) && Directory.Exists(initialFolder))
-                dlg.Directory = initialFolder;
-            var temp = dlg.ShowAsync(desktopLifetime.MainWindow);
-            await temp;
-            result = temp.Result;
+                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
+
+            IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(options);
+            result = files.Select(f => f.TryGetLocalPath() ?? f.Name).ToArray();
         }
     }
     public async Task<string?> SaveFile(Tuple<List<string>, string>[] extensions, bool allowMultiple, string? initialFolder = null, string? initialFile = null)
@@ -89,20 +87,19 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
-            var dlg = new SaveFileDialog()
+            IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
+            var options = new FilePickerSaveOptions()
             {
                 Title = "Save File",
-                InitialFileName = initialFile,
+                SuggestedFileName = initialFile,
+                FileTypeChoices = ToFileTypes(extensions),
             };
-            for (int i = 0; i < extensions.Length; i++)
-            {
-                (dlg.Filters ??= new()).Add(new FileDialogFilter() { Name = extensions[i].Item2, Extensions = extensions[i].Item1 });
-            }
 
             if (!string.IsNullOrWhiteSpace(initialFolder))
-                dlg.Directory = initialFolder;
+                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
 
-            result = await dlg.ShowAsync(desktopLifetime.MainWindow);
+            IStorageFile? file = await storage.SaveFilePickerAsync(options);
+            result = file is null ? null : file.TryGetLocalPath() ?? file.Name;
         }
     }
     public async Task<string?> SelectFolder(string? initialFolder = null)
@@ -131,16 +128,24 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
-            var dlg = new OpenFolderDialog()
+            IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
+            var options = new FolderPickerOpenOptions()
             {
                 Title = "Select Folder",
+                AllowMultiple = false,
             };
             if (!string.IsNullOrWhiteSpace(initialFolder))
-                dlg.Directory = initialFolder;
+                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
 
-            result = await dlg.ShowAsync(desktopLifetime.MainWindow);
+            IReadOnlyList<IStorageFolder> folders = await storage.OpenFolderPickerAsync(options);
+            result = folders.Count > 0 ? folders[0].TryGetLocalPath() ?? folders[0].Name : null;
         }
     }
+
+    // Mesmo mapeamento que o OpenFileDialog/SaveFileDialog obsoletos faziam: cada extensao vira o padrao "*.ext"
+    // (e "*", o "todos os arquivos", vira "*.*").
+    private static List<FilePickerFileType> ToFileTypes(Tuple<List<string>, string>[] extensions)
+        => extensions.Select(e => new FilePickerFileType(e.Item2) { Patterns = e.Item1.Select(x => "*." + x).ToList() }).ToList();
     public async Task<bool?> ConfirmDialog(string message, string[] buttons)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
