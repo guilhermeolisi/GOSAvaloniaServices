@@ -33,10 +33,12 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
 
     private void PlatformSettings_ColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
     {
-        Dispatcher.UIThread.Post(() =>
+        // async: o accent e as cores do sistema sao lidos DEPOIS de o tema 'S' ser aplicado (antes o
+        // SetTheme corria solto e terminava depois do GetSystemColors, com prioridade de dispatcher mais baixa).
+        Dispatcher.UIThread.Post(async () =>
         {
             if (lastTheme is null || lastTheme == 'S')
-                SetTheme('S');
+                await SetTheme('S');
 
             // CORREÇÃO: no snap (Linux), o portal xdg-desktop responde tarde no startup e o
             // FluentAvaloniaTheme não regenera seus resources de accent quando a cor chega por este
