@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Dialogs;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -11,6 +12,7 @@ public class GOSDialogServices : IDialogService
 {
     Dispatcher UIDispatcher = Dispatcher.UIThread;
     static string testResulString = "@#$%¨&*()_+:?}{`^<|";
+    private readonly FilePickerFallback filePicker = new();
 
     /// <summary>
     /// for "All Files" = Extensions = { "*" }
@@ -46,20 +48,44 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
-            IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
-            var options = new FilePickerOpenOptions()
+            Window window = desktopLifetime.MainWindow;
+            string title = "Open File" + (allowMultiple ? "(s)" : "");
+            string? startFolder = filePicker.ResolveStartFolder(initialFolder);
+            result = await filePicker.OpenAsync(native, managed);
+
+            async Task<string[]?> native()
             {
-                Title = "Open File" + (allowMultiple ? "(s)" : ""),
-                AllowMultiple = allowMultiple,
-                SuggestedFileName = initialFile,
-                FileTypeFilter = ToFileTypes(extensions),
-            };
+                IStorageProvider storage = window.StorageProvider;
+                var options = new FilePickerOpenOptions()
+                {
+                    Title = title,
+                    AllowMultiple = allowMultiple,
+                    SuggestedFileName = initialFile,
+                    FileTypeFilter = ToFileTypes(extensions),
+                };
+                if (startFolder is not null)
+                    options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(startFolder);
 
-            if (!string.IsNullOrWhiteSpace(initialFolder) && Directory.Exists(initialFolder))
-                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
+                IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(options);
+                return files.Select(f => f.TryGetLocalPath() ?? f.Name).ToArray();
+            }
 
-            IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(options);
-            result = files.Select(f => f.TryGetLocalPath() ?? f.Name).ToArray();
+            // Seletor gerenciado do Avalonia so nesta chamada: o ManagedStorageProvider e interno, e o
+            // UseManagedSystemDialogs trocaria o seletor do app inteiro. A rota publica e o OpenFileDialog obsoleto.
+            async Task<string[]?> managed()
+            {
+#pragma warning disable CS0618
+                var dialog = new OpenFileDialog()
+                {
+                    Title = title,
+                    AllowMultiple = allowMultiple,
+                    Directory = startFolder,
+                    InitialFileName = initialFile,
+                    Filters = extensions.Select(e => new FileDialogFilter() { Name = e.Item2, Extensions = e.Item1.ToList() }).ToList(),
+                };
+                return await dialog.ShowManagedAsync(window, new ManagedFileDialogOptions());
+#pragma warning restore CS0618
+            }
         }
     }
     public async Task<string?> SaveFile(Tuple<List<string>, string>[] extensions, bool allowMultiple, string? initialFolder = null, string? initialFile = null)
