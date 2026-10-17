@@ -80,6 +80,33 @@ public class GOSDialogServicesTests
         storage.Verify(s => s.TryGetFolderFromPathAsync(It.Is<Uri>(u => u.LocalPath.TrimEnd(Path.DirectorySeparatorChar) == @"D:\removed")), Times.Never);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public async Task BuildSaveOptionsAsync_ShouldSuggestNoFolder_WhenNoFolderIsRequested(string? initialFolder)
+    {
+        var storage = new Mock<IStorageProvider>();
+
+        FilePickerSaveOptions options = await Dialogs.BuildSaveOptionsAsync(
+            storage.Object, Picker(Documents), Extensions("sin"), initialFolder, "Workfile.sin");
+
+        options.SuggestedStartLocation.Should().BeNull();
+        storage.Verify(s => s.TryGetFolderFromPathAsync(It.IsAny<Uri>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public async Task BuildFolderOptionsAsync_ShouldSuggestNoFolder_WhenNoFolderIsRequested(string? initialFolder)
+    {
+        var storage = new Mock<IStorageProvider>();
+
+        FolderPickerOpenOptions options = await Dialogs.BuildFolderOptionsAsync(storage.Object, Picker(Documents), initialFolder);
+
+        options.SuggestedStartLocation.Should().BeNull();
+        storage.Verify(s => s.TryGetFolderFromPathAsync(It.IsAny<Uri>()), Times.Never);
+    }
+
     [Fact]
     public async Task BuildOpenOptionsAsync_ShouldUseTheRequestedFolder_AndTheAllFilesFilter_WhenTheFolderExists()
     {

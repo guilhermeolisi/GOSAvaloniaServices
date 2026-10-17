@@ -104,15 +104,22 @@ public class GOSDialogServices : IDialogService
             Title = "Save File",
             SuggestedFileName = initialFile,
             FileTypeChoices = ToFileTypes(extensions),
-            SuggestedStartLocation = await picker.ResolveStartLocationAsync(storage, initialFolder),
+            SuggestedStartLocation = await StartLocationAsync(storage, picker, initialFolder),
         };
+
+    /// <summary>
+    /// Save e SelectFolder: sem pasta pedida, nenhuma sugestao (o sistema abre na ultima pasta usada, como antes da
+    /// E153); com pasta pedida que nao existe, Documentos. O Open ja caia em Documentos com pasta nula.
+    /// </summary>
+    private static async Task<IStorageFolder?> StartLocationAsync(IStorageProvider storage, FilePickerFallback picker, string? initialFolder)
+        => string.IsNullOrWhiteSpace(initialFolder) ? null : await picker.ResolveStartLocationAsync(storage, initialFolder);
 
     internal static async Task<FolderPickerOpenOptions> BuildFolderOptionsAsync(IStorageProvider storage, FilePickerFallback picker, string? initialFolder)
         => new FolderPickerOpenOptions()
         {
             Title = "Select Folder",
             AllowMultiple = false,
-            SuggestedStartLocation = await picker.ResolveStartLocationAsync(storage, initialFolder),
+            SuggestedStartLocation = await StartLocationAsync(storage, picker, initialFolder),
         };
     public async Task<string?> SaveFile(Tuple<List<string>, string>[] extensions, bool allowMultiple, string? initialFolder = null, string? initialFile = null)
     {
