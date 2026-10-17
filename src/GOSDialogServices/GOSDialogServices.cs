@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Dialogs;
+using Avalonia.Dialogs.Internal;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -49,45 +50,70 @@ public class GOSDialogServices : IDialogService
         async Task method()
         {
             Window window = desktopLifetime.MainWindow;
-            string title = "Open File" + (allowMultiple ? "(s)" : "");
-            string? startFolder = filePicker.ResolveStartFolder(initialFolder);
             result = await filePicker.OpenAsync(native, managed);
 
             async Task<string[]?> native()
             {
                 IStorageProvider storage = window.StorageProvider;
-                var options = new FilePickerOpenOptions()
-                {
-                    Title = title,
-                    AllowMultiple = allowMultiple,
-                    SuggestedFileName = initialFile,
-                    FileTypeFilter = ToFileTypes(extensions),
-                };
-                if (startFolder is not null)
-                    options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(startFolder);
-
+                FilePickerOpenOptions options = await BuildOpenOptionsAsync(storage, filePicker, extensions, allowMultiple, initialFolder, initialFile);
                 IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(options);
                 return files.Select(f => f.TryGetLocalPath() ?? f.Name).ToArray();
             }
 
             // Seletor gerenciado do Avalonia so nesta chamada: o ManagedStorageProvider e interno, e o
-            // UseManagedSystemDialogs trocaria o seletor do app inteiro. A rota publica e o OpenFileDialog obsoleto.
+            // UseManagedSystemDialogs trocaria o seletor do app inteiro. O OpenFileDialog.ShowManagedAsync saiu na
+            // Avalonia 12 (E153): a janela do ManagedFileChooser e montada aqui, como o ManagedStorageProvider a monta.
             async Task<string[]?> managed()
             {
-#pragma warning disable CS0618
-                var dialog = new OpenFileDialog()
+                FilePickerOpenOptions options = await BuildOpenOptionsAsync(window.StorageProvider, filePicker, extensions, allowMultiple, initialFolder, initialFile);
+                var model = new ManagedFileChooserViewModel(options, new ManagedFileDialogOptions());
+                var chooser = new Window()
                 {
-                    Title = title,
-                    AllowMultiple = allowMultiple,
-                    Directory = startFolder,
-                    InitialFileName = initialFile,
-                    Filters = extensions.Select(e => new FileDialogFilter() { Name = e.Item2, Extensions = e.Item1.ToList() }).ToList(),
+                    Title = options.Title,
+                    Content = new ManagedFileChooser(),
+                    DataContext = model,
                 };
-                return await dialog.ShowManagedAsync(window, new ManagedFileDialogOptions());
-#pragma warning restore CS0618
+                string[]? chosen = null;
+                model.CompleteRequested += items =>
+                {
+                    chosen = items;
+                    chooser.Close();
+                };
+                model.CancelRequested += chooser.Close;
+                await chooser.ShowDialog(window);
+                return chosen;
             }
         }
     }
+
+    internal static async Task<FilePickerOpenOptions> BuildOpenOptionsAsync(IStorageProvider storage, FilePickerFallback picker,
+        Tuple<List<string>, string>[] extensions, bool allowMultiple, string? initialFolder, string? initialFile)
+        => new FilePickerOpenOptions()
+        {
+            Title = "Open File" + (allowMultiple ? "(s)" : ""),
+            AllowMultiple = allowMultiple,
+            SuggestedFileName = initialFile,
+            FileTypeFilter = ToFileTypes(extensions),
+            SuggestedStartLocation = await picker.ResolveStartLocationAsync(storage, initialFolder),
+        };
+
+    internal static async Task<FilePickerSaveOptions> BuildSaveOptionsAsync(IStorageProvider storage, FilePickerFallback picker,
+        Tuple<List<string>, string>[] extensions, string? initialFolder, string? initialFile)
+        => new FilePickerSaveOptions()
+        {
+            Title = "Save File",
+            SuggestedFileName = initialFile,
+            FileTypeChoices = ToFileTypes(extensions),
+            SuggestedStartLocation = await picker.ResolveStartLocationAsync(storage, initialFolder),
+        };
+
+    internal static async Task<FolderPickerOpenOptions> BuildFolderOptionsAsync(IStorageProvider storage, FilePickerFallback picker, string? initialFolder)
+        => new FolderPickerOpenOptions()
+        {
+            Title = "Select Folder",
+            AllowMultiple = false,
+            SuggestedStartLocation = await picker.ResolveStartLocationAsync(storage, initialFolder),
+        };
     public async Task<string?> SaveFile(Tuple<List<string>, string>[] extensions, bool allowMultiple, string? initialFolder = null, string? initialFile = null)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
@@ -114,16 +140,7 @@ public class GOSDialogServices : IDialogService
         async Task method()
         {
             IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
-            var options = new FilePickerSaveOptions()
-            {
-                Title = "Save File",
-                SuggestedFileName = initialFile,
-                FileTypeChoices = ToFileTypes(extensions),
-            };
-
-            if (!string.IsNullOrWhiteSpace(initialFolder))
-                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
-
+            FilePickerSaveOptions options = await BuildSaveOptionsAsync(storage, filePicker, extensions, initialFolder, initialFile);
             IStorageFile? file = await storage.SaveFilePickerAsync(options);
             result = file is null ? null : file.TryGetLocalPath() ?? file.Name;
         }
@@ -155,23 +172,19 @@ public class GOSDialogServices : IDialogService
         async Task method()
         {
             IStorageProvider storage = desktopLifetime.MainWindow.StorageProvider;
-            var options = new FolderPickerOpenOptions()
-            {
-                Title = "Select Folder",
-                AllowMultiple = false,
-            };
-            if (!string.IsNullOrWhiteSpace(initialFolder))
-                options.SuggestedStartLocation = await storage.TryGetFolderFromPathAsync(initialFolder);
-
+            FolderPickerOpenOptions options = await BuildFolderOptionsAsync(storage, filePicker, initialFolder);
             IReadOnlyList<IStorageFolder> folders = await storage.OpenFolderPickerAsync(options);
             result = folders.Count > 0 ? folders[0].TryGetLocalPath() ?? folders[0].Name : null;
         }
     }
 
-    // Mesmo mapeamento que o OpenFileDialog/SaveFileDialog obsoletos faziam: cada extensao vira o padrao "*.ext"
-    // (e "*", o "todos os arquivos", vira "*.*").
-    private static List<FilePickerFileType> ToFileTypes(Tuple<List<string>, string>[] extensions)
-        => extensions.Select(e => new FilePickerFileType(e.Item2) { Patterns = e.Item1.Select(x => "*." + x).ToList() }).ToList();
+    // Cada extensao vira o padrao "*.ext" (com ou sem o ponto ou o asterisco de quem chama), e "*", o "todos os
+    // arquivos", fica "*": o "*.*" deixava de fora, no Linux, o arquivo sem extensao (E153).
+    internal static List<FilePickerFileType> ToFileTypes(Tuple<List<string>, string>[] extensions)
+        => extensions.Select(e => new FilePickerFileType(e.Item2) { Patterns = e.Item1.Select(ToPattern).ToList() }).ToList();
+
+    private static string ToPattern(string extension)
+        => extension == "*" ? "*" : "*." + extension.TrimStart('*', '.');
     public async Task<bool?> ConfirmDialog(string message, string[] buttons)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;

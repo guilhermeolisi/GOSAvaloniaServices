@@ -1,8 +1,12 @@
 using System.Runtime.InteropServices;
 
+using Avalonia.Platform.Storage;
+
 using FluentAssertions;
 
 using GOSAvaloniaServices;
+
+using Moq;
 
 namespace GOSDialogServices.Tests;
 
@@ -71,5 +75,28 @@ public class FilePickerFallbackTests
             () => Task.FromResult<string[]?>([]));
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task ResolveStartLocationAsync_ShouldAskTheProviderForTheDocuments_WhenTheRequestedFolderDoesNotExist()
+    {
+        var folder = Mock.Of<IStorageFolder>();
+        var storage = new Mock<IStorageProvider>();
+        storage.Setup(s => s.TryGetFolderFromPathAsync(It.IsAny<Uri>())).ReturnsAsync(folder);
+
+        IStorageFolder? start = await Create(Documents).ResolveStartLocationAsync(storage.Object, @"D:\removed");
+
+        start.Should().BeSameAs(folder);
+        storage.Verify(s => s.TryGetFolderFromPathAsync(It.Is<Uri>(u => u.LocalPath.TrimEnd(Path.DirectorySeparatorChar) == Documents)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResolveStartLocationAsync_ShouldReturnNull_WithoutAskingTheProvider_WhenNoFolderExists()
+    {
+        var storage = new Mock<IStorageProvider>(MockBehavior.Strict);
+
+        IStorageFolder? start = await Create().ResolveStartLocationAsync(storage.Object, @"D:\removed");
+
+        start.Should().BeNull();
     }
 }

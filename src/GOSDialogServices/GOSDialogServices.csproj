@@ -21,6 +21,10 @@
     <ProjectReference Include="..\GOSDialogServicesInterface\GOSDialogServicesInterface.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="GOSDialogServices.Tests" />
+  </ItemGroup>
+
   <!--<ItemGroup>
     <Compile Update="GetOneTextEntryView.axaml.cs">
       <DependentUpon>%(Filename)</DependentUpon>

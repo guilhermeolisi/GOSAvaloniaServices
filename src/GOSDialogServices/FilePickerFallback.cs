@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Avalonia.Platform.Storage;
 
 namespace GOSAvaloniaServices;
 
@@ -34,6 +35,19 @@ public sealed class FilePickerFallback
         if (!string.IsNullOrWhiteSpace(documents) && directoryExists(documents))
             return documents;
         return null;
+    }
+
+    /// <summary>
+    /// A pasta de <see cref="ResolveStartFolder"/> como pasta do seletor; <c>null</c> sem consultar o
+    /// <paramref name="storage"/> quando nao ha pasta que exista. O Open, o Save e o SelectFolder passam por aqui: o
+    /// Save e o SelectFolder pediam ao provedor a pasta inexistente, sem a troca por Documentos (E153).
+    /// </summary>
+    public async Task<IStorageFolder?> ResolveStartLocationAsync(IStorageProvider storage, string? initialFolder)
+    {
+        string? start = ResolveStartFolder(initialFolder);
+        if (start is null)
+            return null;
+        return await storage.TryGetFolderFromPathAsync(start);
     }
 
     /// <summary>
