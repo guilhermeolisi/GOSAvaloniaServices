@@ -1,15 +1,15 @@
 ﻿using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 
 namespace GOSAvaloniaServices;
 
-public class GetOneTextEntryViewModel : ReactiveObject
+public partial class GetOneTextEntryViewModel : ReactiveObject
 {
     [Reactive]
-    public string? TextEntry { get; set; }
+    public partial string? TextEntry { get; set; }
     [Reactive]
-    public string? Message { get; set; }
+    public partial string? Message { get; set; }
     public string? Watermark { get; set; }
     /// <summary>
     /// Só para design
