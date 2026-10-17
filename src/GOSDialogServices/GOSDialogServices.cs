@@ -192,7 +192,7 @@ public class GOSDialogServices : IDialogService
         if (desktopLifetime is null || desktopLifetime.MainWindow is null || string.IsNullOrWhiteSpace(message) || buttons is null || buttons.Length == 0)
             return null;
 
-        ContentDialogResult? result = null;
+        FAContentDialogResult? result = null;
 
         if (UIDispatcher.CheckAccess())
         {
@@ -217,17 +217,17 @@ public class GOSDialogServices : IDialogService
         //{
         //    result = dialog.ShowAsync().Result;
         //}
-        if (result == ContentDialogResult.None)
+        if (result == FAContentDialogResult.None)
             return null;
-        else if (result == ContentDialogResult.Secondary)
+        else if (result == FAContentDialogResult.Secondary)
             return false;
-        else if (result == ContentDialogResult.Primary)
+        else if (result == FAContentDialogResult.Primary)
             return true;
         return null;
 
         async Task method()
         {
-            var dlg = new ContentDialog()
+            var dlg = new FAContentDialog()
             {
                 Title = "Confirm",
                 PrimaryButtonText = buttons[0],
@@ -267,7 +267,7 @@ public class GOSDialogServices : IDialogService
         var content = new GetOneTextEntryView() { DataContext = contentVM };
         string initialEntry = entry is null ? null : entry[..];
 
-        ContentDialogResult? result = null;
+        FAContentDialogResult? result = null;
         if (UIDispatcher.CheckAccess())
         {
             await method();
@@ -282,19 +282,19 @@ public class GOSDialogServices : IDialogService
             while (!UIDispatcher.CheckAccess() && result is null) { }
         }
 
-        if (result is null || result == ContentDialogResult.None)
+        if (result is null || result == FAContentDialogResult.None)
             return null;
 
         return contentVM.TextEntry;
 
         async Task method()
         {
-            ContentDialog dlg = new ContentDialog()
+            FAContentDialog dlg = new FAContentDialog()
             {
                 Title = "Text Entry",
                 PrimaryButtonText = buttons[0],
                 CloseButtonText = buttons[buttons.Length - 1],
-                DefaultButton = ContentDialogButton.Primary,
+                DefaultButton = FAContentDialogButton.Primary,
             };
             contentVM.PropertyChanged += (_, e) =>
             {
@@ -332,7 +332,7 @@ public class GOSDialogServices : IDialogService
         if (desktopLifetime is null || desktopLifetime.MainWindow is null)
             throw new ApplicationException("The app must have a window to show the dialog");
 
-        ContentDialogResult? result = null;
+        FAContentDialogResult? result = null;
         if (UIDispatcher.CheckAccess())
         {
             await method();
@@ -349,18 +349,18 @@ public class GOSDialogServices : IDialogService
             //while (!UIDispatcher.CheckAccess() && result is null) { }
         }
 
-        if (result is null || result == ContentDialogResult.None)
+        if (result is null || result == FAContentDialogResult.None)
             return null;
 
-        return result == ContentDialogResult.Primary;
+        return result == FAContentDialogResult.Primary;
 
         async Task method()
         {
-            ContentDialog dlg = new()
+            FAContentDialog dlg = new()
             {
                 Title = title,
                 PrimaryButtonText = buttons[0],
-                DefaultButton = ContentDialogButton.Primary,
+                DefaultButton = FAContentDialogButton.Primary,
             };
             if (buttons.Length >= 2)
             {
