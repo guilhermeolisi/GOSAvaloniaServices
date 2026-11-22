@@ -147,6 +147,39 @@ public class GOSDialogServicesTests
     }
 
     [Fact]
+    public void ConfirmButtons_ShouldShowOnlyTheCloseButton_WhenThereIsOneButton()
+    {
+        // E183, A148: com um botao so o dialogo e um aviso; o mesmo texto nao pode virar Primary e Close ao mesmo tempo.
+        var layout = Dialogs.ConfirmButtons(["Ok"]);
+
+        layout.Primary.Should().BeNull();
+        layout.Secondary.Should().BeNull();
+        layout.Close.Should().Be("Ok");
+        layout.Default.Should().Be(FluentAvalonia.UI.Controls.FAContentDialogButton.Close);
+    }
+
+    // Os primeiros botoes reais dos chamadores diretos de ConfirmDialog no Nimloth (E183, A9): o titulo diz a acao.
+    [Theory]
+    [InlineData(new[] { "Replace", "Cancel" }, "Replace?")]
+    [InlineData(new[] { "Reset", "Cancel" }, "Reset?")]
+    [InlineData(new[] { "Delete", "Cancel" }, "Delete?")]
+    [InlineData(new[] { "Delete permanently", "Cancel" }, "Delete permanently?")]
+    [InlineData(new[] { "Delete model", "Keep" }, "Delete model?")]
+    [InlineData(new[] { "Yes", "No" }, "Confirm")]
+    [InlineData(new[] { "Ok", "Cancel" }, "Confirm")]
+    [InlineData(new[] { "Save", "Don't save", "Cancel" }, "Save?")]
+    [InlineData(new[] { "Ok" }, "Notice")]
+    [InlineData(new[] { "Close" }, "Notice")]
+    [InlineData(new[] { "Open Windows Security", "Got it" }, "Notice")]
+    [InlineData(new[] { "Allow", "Deny" }, "Allow?")]
+    public void ConfirmTitle_ShouldNameTheAction_OfTheFirstButton(string[] buttons, string expected)
+        => Dialogs.ConfirmTitle(buttons).Should().Be(expected);
+
+    [Fact]
+    public void ConfirmTitle_ShouldNotDoubleTheQuestionMark()
+        => Dialogs.ConfirmTitle(["Discard changes?", "Cancel"]).Should().Be("Discard changes?");
+
+    [Fact]
     public void MessageDialogClass_ShouldBeTheStyleClassTheAppLimitsInWidth()
         => Dialogs.MessageDialogClass.Should().Be("gos-message");
 }

@@ -14,6 +14,7 @@
 	</Design.DataContext>
 	<Grid RowDefinitions="Auto,Auto">
 		<TextBlock Text="{Binding Message}" Margin="0,5" />
-		<TextBox Grid.Row="1" Text="{Binding TextEntry}" Watermark="{Binding Watermark}"/>
+		<TextBox Grid.Row="1" x:Name="entry" Text="{Binding TextEntry}" PlaceholderText="{Binding Watermark}"
+				 AutomationProperties.Name="{Binding Message}"/>
 	</Grid>
 </UserControl>

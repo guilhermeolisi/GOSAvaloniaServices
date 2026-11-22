@@ -237,12 +237,13 @@ public class GOSDialogServices : IDialogService
             ConfirmDialogButtons layout = ConfirmButtons(buttons);
             var dlg = new FAContentDialog()
             {
-                Title = "Confirm",
-                PrimaryButtonText = layout.Primary,
+                Title = ConfirmTitle(buttons),
                 CloseButtonText = layout.Close,
                 DefaultButton = layout.Default,
                 Content = message
             };
+            if (layout.Primary is not null)
+                dlg.PrimaryButtonText = layout.Primary;
             if (layout.Secondary is not null)
                 dlg.SecondaryButtonText = layout.Secondary;
             dlg.Classes.Add(MessageDialogClass);
@@ -257,14 +258,43 @@ public class GOSDialogServices : IDialogService
     public const string MessageDialogClass = "gos-message";
 
     /// <summary>Os textos dos botoes do <see cref="ConfirmDialog"/> e o botao do Enter.</summary>
-    internal sealed record ConfirmDialogButtons(string Primary, string? Secondary, string Close, FAContentDialogButton Default);
+    internal sealed record ConfirmDialogButtons(string? Primary, string? Secondary, string Close, FAContentDialogButton Default);
 
     /// <summary>
     /// O primeiro botao e o Primary (devolve true), o do meio, com tres, o Secondary (false), e o ultimo o Close (null).
     /// O Enter fica no ULTIMO, o seguro: todo chamador poe o verbo primeiro e o "Cancel" por ultimo (E179, Parte 5).
+    /// Com UM botao e um aviso sem escolha (NIMLOTH-UX.md 4.5): so o Close, para o mesmo texto nao virar dois botoes
+    /// (E183, A148); o dialogo devolve null.
     /// </summary>
     internal static ConfirmDialogButtons ConfirmButtons(string[] buttons)
-        => new(buttons[0], buttons.Length == 3 ? buttons[1] : null, buttons[^1], FAContentDialogButton.Close);
+        => buttons.Length == 1
+            ? new(null, null, buttons[0], FAContentDialogButton.Close)
+            : new(buttons[0], buttons.Length == 3 ? buttons[1] : null, buttons[^1], FAContentDialogButton.Close);
+
+    /// <summary>Botoes que nao dizem a acao: o titulo deles fica o generico "Confirm" (ou "Notice", num aviso).</summary>
+    private static readonly HashSet<string> GenericButtons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Ok", "Yes", "No", "Close", "Continue", "Cancel", "Accept", "Apply",
+    };
+
+    /// <summary>Ultimo botao que so reconhece o aviso, sem recusar nada: o dialogo e um aviso ("Notice").</summary>
+    private static readonly HashSet<string> AcknowledgeButtons = new(StringComparer.OrdinalIgnoreCase) { "Got it" };
+
+    /// <summary>
+    /// Titulo do <see cref="ConfirmDialog"/> pelo verbo do primeiro botao, como a lei de dialogos pede ("Delete model?",
+    /// NIMLOTH-UX.md 6.6; A148 da E183): a assinatura fica a mesma porque os chamadores e os mocks deles a afirmam.
+    /// Botao generico da "Confirm"; um botao so (aviso sem escolha) da "Notice".
+    /// </summary>
+    internal static string ConfirmTitle(string[] buttons)
+    {
+        // Aviso: um botao so, ou o ultimo so reconhece ("Got it"), como o conselho da pasta protegida.
+        if (buttons.Length == 1 || AcknowledgeButtons.Contains(buttons[^1].Trim()))
+            return "Notice";
+        string first = buttons[0].Trim();
+        if (first.Length == 0 || GenericButtons.Contains(first))
+            return "Confirm";
+        return first.EndsWith('?') ? first : first + "?";
+    }
     public async Task<string?> GetOneEntryDialog(string message, string entry, string waterMark, bool canSameInitialEntry, string[] buttons)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
