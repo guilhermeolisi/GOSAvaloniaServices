@@ -8,8 +8,19 @@ using FluentAvalonia.Styling;
 
 namespace GOSBaseInjection;
 
-public class FluentAvaloniaThemeChanger : IThemeChanger
+public class FluentAvaloniaThemeChanger : IThemeChanger, IDisposable
 {
+    /// <summary>
+    /// Solta o evento de cores do sistema, que e da aplicacao (global): sem isto um changer descartado continuaria
+    /// trocando os estilos a cada mudanca do sistema (E182; no app ha um so, de vida do processo).
+    /// </summary>
+    public void Dispose()
+    {
+        if (Application.Current is { } app)
+            app.PlatformSettings.ColorValuesChanged -= PlatformSettings_ColorValuesChanged;
+        GC.SuppressFinalize(this);
+    }
+
     private FluentAvaloniaTheme _faTheme;
     List<(char type, IThemeBase theme)>? _themes;
     List<(char type, IThemeBase theme)>? _transparencies;
@@ -85,6 +96,8 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
                     case 'S':
                     default:
                         //Application.Current.RequestedThemeVariant = null;
+                        // O PreferSystemTheme do FluentAvalonia poe na aplicacao a variante do sistema (e a segue); por
+                        // vir de 'D' ou 'L' nao fica presa (E182, SetTheme_ShouldFollowTheSystem_WhenSystemComesAfterDark).
                         _faTheme.PreferSystemTheme = true;
                         isDark = Application.Current.ActualThemeVariant == ThemeVariant.Dark;
                         //thm.RequestedTheme = "Light";
@@ -129,13 +142,7 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            for (int i = 0; i < _transparencies?.Count; i++)
-            {
-                if (_transparencies[i].theme is IThemeTransparencyBase t && t.Transparency == isTransparent && (!isTransparent || t.isAllTransparent == isAllTransparent) && t.Type == type)
-                {
-                    theme = t;
-                }
-            }
+            theme = FindTransparency(isTransparent, isAllTransparent, type);
 
             if (theme is not null)
             {
@@ -284,6 +291,24 @@ public class FluentAvaloniaThemeChanger : IThemeChanger
         _faTheme.PreferUserAccentColor = false;
         _faTheme.CustomAccentColor = systemAccent;
     }
+    /// <summary>
+    /// O dicionario de transparencia do tipo pedido. Sem o par exato (o consumidor pode ter menos dicionarios que as
+    /// combinacoes de <paramref name="isTransparent"/> e <paramref name="isAllTransparent"/>, como o Nimloth desde a
+    /// E182, com um interruptor so), cai no de mesma <c>Transparency</c> e mesmo tipo, e por fim no primeiro do mesmo
+    /// tipo; sem nenhum do tipo, devolve null e a aplicacao fica com o que tem.
+    /// </summary>
+    private IThemeTransparencyBase? FindTransparency(bool isTransparent, bool isAllTransparent, char? type)
+    {
+        var sameType = _transparencies?
+            .Select(x => x.theme)
+            .OfType<IThemeTransparencyBase>()
+            .Where(t => t.Type == type)
+            .ToList() ?? [];
+        return sameType.LastOrDefault(t => t.Transparency == isTransparent && (!isTransparent || t.isAllTransparent == isAllTransparent))
+            ?? sameType.FirstOrDefault(t => t.Transparency == isTransparent)
+            ?? sameType.FirstOrDefault();
+    }
+
     private Styles? FindTheme(char type)
     {
         for (int i = 0; i < _themes?.Count; i++)
