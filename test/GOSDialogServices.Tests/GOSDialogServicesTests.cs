@@ -122,4 +122,31 @@ public class GOSDialogServicesTests
         options.Title.Should().Be("Open File(s)");
         options.FileTypeFilter!.Single().Patterns.Should().Equal("*");
     }
+
+    [Fact]
+    public void ConfirmButtons_ShouldPutEnterOnTheLastButton_WhenTheActionComesFirst()
+    {
+        // E179, Parte 5: o Enter cai no botao seguro, o ultimo (Close, que devolve null), nunca no verbo.
+        var layout = Dialogs.ConfirmButtons(["Delete", "Cancel"]);
+
+        layout.Primary.Should().Be("Delete");
+        layout.Close.Should().Be("Cancel");
+        layout.Secondary.Should().BeNull();
+        layout.Default.Should().Be(FluentAvalonia.UI.Controls.FAContentDialogButton.Close);
+    }
+
+    [Fact]
+    public void ConfirmButtons_ShouldUseTheMiddleButtonAsSecondary_WhenThereAreThree()
+    {
+        var layout = Dialogs.ConfirmButtons(["Save", "Don't save", "Cancel"]);
+
+        layout.Primary.Should().Be("Save");
+        layout.Secondary.Should().Be("Don't save");
+        layout.Close.Should().Be("Cancel");
+        layout.Default.Should().Be(FluentAvalonia.UI.Controls.FAContentDialogButton.Close);
+    }
+
+    [Fact]
+    public void MessageDialogClass_ShouldBeTheStyleClassTheAppLimitsInWidth()
+        => Dialogs.MessageDialogClass.Should().Be("gos-message");
 }

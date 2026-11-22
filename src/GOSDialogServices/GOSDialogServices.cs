@@ -234,24 +234,37 @@ public class GOSDialogServices : IDialogService
 
         async Task method()
         {
+            ConfirmDialogButtons layout = ConfirmButtons(buttons);
             var dlg = new FAContentDialog()
             {
                 Title = "Confirm",
-                PrimaryButtonText = buttons[0],
-                CloseButtonText = buttons[buttons.Length - 1],
+                PrimaryButtonText = layout.Primary,
+                CloseButtonText = layout.Close,
+                DefaultButton = layout.Default,
                 Content = message
             };
-            if (buttons.Length > 1)
-            {
-                dlg.CloseButtonText = buttons[buttons.Length - 1];
-                if (buttons.Length == 3)
-                {
-                    dlg.SecondaryButtonText = buttons[1];
-                }
-            }
+            if (layout.Secondary is not null)
+                dlg.SecondaryButtonText = layout.Secondary;
+            dlg.Classes.Add(MessageDialogClass);
             result = await dlg.ShowAsync();
         }
     }
+
+    /// <summary>
+    /// Classe dos dialogos de mensagem (confirmacao e entrada de texto): o app que consome o servico limita a largura deles
+    /// por um estilo nessa classe (E179). O <see cref="FromViewModelDialog"/> nao a leva: mede pelo conteudo.
+    /// </summary>
+    public const string MessageDialogClass = "gos-message";
+
+    /// <summary>Os textos dos botoes do <see cref="ConfirmDialog"/> e o botao do Enter.</summary>
+    internal sealed record ConfirmDialogButtons(string Primary, string? Secondary, string Close, FAContentDialogButton Default);
+
+    /// <summary>
+    /// O primeiro botao e o Primary (devolve true), o do meio, com tres, o Secondary (false), e o ultimo o Close (null).
+    /// O Enter fica no ULTIMO, o seguro: todo chamador poe o verbo primeiro e o "Cancel" por ultimo (E179, Parte 5).
+    /// </summary>
+    internal static ConfirmDialogButtons ConfirmButtons(string[] buttons)
+        => new(buttons[0], buttons.Length == 3 ? buttons[1] : null, buttons[^1], FAContentDialogButton.Close);
     public async Task<string?> GetOneEntryDialog(string message, string entry, string waterMark, bool canSameInitialEntry, string[] buttons)
     {
         var desktopLifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
@@ -310,6 +323,7 @@ public class GOSDialogServices : IDialogService
                 dlg.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(contentVM.TextEntry) && (canSameInitialEntry || contentVM.TextEntry != initialEntry);
             };
             dlg.Content = content;
+            dlg.Classes.Add(MessageDialogClass);
             //dlg.IsPrimaryButtonEnabled = false;
             result = await dlg.ShowAsync();
         }
